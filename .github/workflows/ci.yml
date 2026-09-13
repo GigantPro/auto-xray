@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test tools
+        run: sudo apt-get update && sudo apt-get install -y shellcheck bats jq
+      - name: Build and test
+        env:
+          VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'dev' }}
+        run: make test VERSION="${VERSION#v}"
+      - name: Test distribution matrix
+        run: tests/portability.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auto-xray-${{ github.sha }}
+          path: |
+            dist/auto-xray
+            dist/auto-xray.sha256
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build tagged release
+        run: make build VERSION="${GITHUB_REF_NAME#v}"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/auto-xray dist/auto-xray.sha256 --verify-tag --generate-notes
