@@ -46,7 +46,7 @@ ax_load_settings() {
 
 ax_save_subscription_url() {
   local url=$1
-  [[ $url == https://* || ${AX_ALLOW_HTTP:-false} == true ]] || ax_die "subscription URL must use HTTPS"
+  [[ $url == https://* ]] || ax_die "subscription URL must use HTTPS"
   printf '%s\n' "$url" | ax_write_atomic "$AX_SECRET_FILE" 0600
 }
 

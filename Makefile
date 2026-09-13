@@ -8,10 +8,11 @@ build:
 
 check: build
 	@bash -n dist/auto-xray
-	@if command -v shellcheck >/dev/null 2>&1; then shellcheck -x src/auto-xray.sh src/lib/*.sh scripts/build.sh; else echo "shellcheck not installed; skipped"; fi
+	@if command -v shellcheck >/dev/null 2>&1; then shellcheck dist/auto-xray scripts/build.sh tests/smoke.sh; else echo "shellcheck not installed; skipped"; fi
 
 test: check
-	@if command -v bats >/dev/null 2>&1; then bats tests; else bash tests/smoke.sh; fi
+	@bash tests/smoke.sh
+	@if command -v bats >/dev/null 2>&1; then bats tests/unit.bats; else echo "bats not installed; extended tests skipped"; fi
 
 clean:
 	@rm -rf dist

@@ -10,9 +10,9 @@ AX_ORIGINAL_ARGS=("$@")
 AX_INTERACTIVE=true
 AX_INSTALL_DEPS=false
 AX_ASSUME_YES=false
-AX_ALLOW_HTTP=false
 AX_DEPLOYMENT=''
 AX_XRAY_VERSION_CHOICE=recommended
+AX_XRAY_VERSION_SET=false
 AX_SUBSCRIPTION_INPUT=''
 AX_SUBSCRIPTION_FILE=''
 AX_PROFILE_CHOICE=''
@@ -55,9 +55,8 @@ ax_parse_options() {
       --non-interactive) AX_INTERACTIVE=false ;;
       --install-deps) AX_INSTALL_DEPS=true ;;
       --yes) AX_ASSUME_YES=true ;;
-      --allow-http) AX_ALLOW_HTTP=true ;;
       --deployment) [[ $# -ge 2 ]] || ax_die "$1 requires a value"; AX_DEPLOYMENT=$2; shift ;;
-      --xray-version) [[ $# -ge 2 ]] || ax_die "$1 requires a value"; AX_XRAY_VERSION_CHOICE=$2; shift ;;
+      --xray-version) [[ $# -ge 2 ]] || ax_die "$1 requires a value"; AX_XRAY_VERSION_CHOICE=$2; AX_XRAY_VERSION_SET=true; shift ;;
       --subscription-url) [[ $# -ge 2 ]] || ax_die "$1 requires a value"; AX_SUBSCRIPTION_INPUT=$2; shift ;;
       --subscription-url-file) [[ $# -ge 2 ]] || ax_die "$1 requires a value"; AX_SUBSCRIPTION_FILE=$2; shift ;;
       --profile) [[ $# -ge 2 ]] || ax_die "$1 requires a value"; AX_PROFILE_CHOICE=$2; shift ;;
@@ -160,7 +159,7 @@ ax_interactive_choices() {
 }
 
 ax_install_command() {
-  shift || true
+  local mode=$1 old_deployment=''; shift || true
   ax_parse_options "$@"
   ax_detect_platform
   ax_require_root "$AX_INTERACTIVE"
@@ -178,13 +177,18 @@ ax_install_command() {
   fi
   ax_validate_choices
   ax_require_dependencies "$AX_SCHEDULER" "$AX_DEPLOYMENT" "$AX_INSTALL_DEPS" "$AX_INTERACTIVE"
+  if [[ $mode == configure && -r $AX_CONFIG_FILE ]]; then
+    old_deployment=$(ax_read_kv DEPLOYMENT)
+    [[ $old_deployment == "$AX_DEPLOYMENT" ]] || ax_die "changing deployment mode requires uninstall followed by install"
+    ax_runtime_stop
+    ax_remove_scheduler
+  fi
   ax_resolve_xray_version "$AX_XRAY_VERSION_CHOICE"
   ax_prepare_xray
   local profile_index
   profile_index=$(ax_choose_profile_index "$AX_SETUP_BODY")
   AX_PROFILE_REMARK=$(ax_profile_remark "$AX_SETUP_BODY" "$profile_index")
   AX_PROFILE_OCCURRENCE=$(ax_remark_occurrence "$AX_SETUP_BODY" "$profile_index")
-  ax_save_settings
   ax_step validate 'Validating profiles and proxy connectivity'
   if ! ax_apply_subscription "$AX_SETUP_BODY" "$AX_SETUP_HEADERS" "$profile_index" true; then
     rm -rf -- "$AX_SETUP_TEMP"; ax_die "no working subscription profile was found"
@@ -225,13 +229,18 @@ ax_logs_command() {
 
 ax_core_upgrade() {
   ax_parse_options "$@"
+  [[ $AX_XRAY_VERSION_SET == true ]] || ax_die "core-upgrade requires --xray-version"
   ax_load_for_command
-  local was_running=false
+  local was_running=false old_bin=$AX_XRAY_BIN old_version=$AX_XRAY_VERSION old_mode=$AX_XRAY_VERSION_MODE
   ax_runtime_is_running && was_running=true
   ax_runtime_stop
   ax_resolve_xray_version "$AX_XRAY_VERSION_CHOICE"
   ax_prepare_xray
-  ax_xray_test_config "$AX_ACTIVE_CONFIG" || ax_die "active config is incompatible with Xray $AX_XRAY_VERSION"
+  if ! ax_xray_test_config "$AX_ACTIVE_CONFIG"; then
+    AX_XRAY_BIN=$old_bin; AX_XRAY_VERSION=$old_version; AX_XRAY_VERSION_MODE=$old_mode
+    [[ $was_running == true ]] && ax_runtime_start
+    ax_die "active config is incompatible with requested Xray version"
+  fi
   ax_save_settings
   [[ $was_running == true ]] && ax_runtime_start
   ax_ok "Xray core is now $AX_XRAY_VERSION"

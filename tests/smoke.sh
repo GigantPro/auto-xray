@@ -5,9 +5,13 @@ output=$("$root_dir/dist/auto-xray" --version)
 [[ $output == "auto-xray ${VERSION:-dev}" ]]
 "$root_dir/dist/auto-xray" --help | grep -q '^Usage:'
 
+# shellcheck source=/dev/null
 source "$root_dir/src/lib/00-common.sh"
+# shellcheck source=/dev/null
 source "$root_dir/src/lib/04-subscription.sh"
+# shellcheck source=/dev/null
 source "$root_dir/src/lib/05-xray.sh"
+# shellcheck source=/dev/null
 source "$root_dir/src/lib/07-update.sh"
 fixture="$root_dir/tests/fixtures/subscription.json"
 [[ $(ax_profile_count "$fixture") == 3 ]]

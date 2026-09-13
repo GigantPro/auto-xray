@@ -1,4 +1,4 @@
-AX_OS_ID=''; AX_OS_VERSION=''; AX_ARCH=''; AX_XRAY_ASSET=''; AX_PACKAGE_MANAGER=''
+AX_OS_ID=''; AX_OS_VERSION=''; AX_XRAY_ASSET=''; AX_PACKAGE_MANAGER=''
 
 ax_detect_platform() {
   [[ $(uname -s) == Linux ]] || ax_die "only Linux is supported"
@@ -15,8 +15,8 @@ ax_detect_platform() {
     *) ax_die "unsupported distribution: $AX_OS_ID" ;;
   esac
   case $(uname -m) in
-    x86_64|amd64) AX_ARCH=amd64; AX_XRAY_ASSET=Xray-linux-64.zip ;;
-    aarch64|arm64) AX_ARCH=arm64; AX_XRAY_ASSET=Xray-linux-arm64-v8a.zip ;;
+    x86_64|amd64) AX_XRAY_ASSET=Xray-linux-64.zip ;;
+    aarch64|arm64) AX_XRAY_ASSET=Xray-linux-arm64-v8a.zip ;;
     *) ax_die "unsupported architecture: $(uname -m)" ;;
   esac
 }
@@ -41,12 +41,14 @@ ax_dependency_packages() {
 }
 
 ax_install_dependencies() {
-  local scheduler=$1 packages
-  packages=$(ax_dependency_packages "$scheduler")
-  ax_info "Installing required packages: $packages"
+  local scheduler=$1 package_line
+  local -a packages
+  package_line=$(ax_dependency_packages "$scheduler")
+  read -r -a packages <<<"$package_line"
+  ax_info "Installing required packages: ${packages[*]}"
   case $AX_PACKAGE_MANAGER in
-    apt) DEBIAN_FRONTEND=noninteractive apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y $packages ;;
-    pacman) pacman -S --needed --noconfirm $packages ;;
+    apt) DEBIAN_FRONTEND=noninteractive apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install -y "${packages[@]}" ;;
+    pacman) pacman -S --needed --noconfirm "${packages[@]}" ;;
   esac
 }
 

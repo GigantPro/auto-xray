@@ -19,5 +19,5 @@ mkdir -p "$out_dir"
       "$root_dir/src/auto-xray.sh"
 } >"$out_file"
 chmod 0755 "$out_file"
-sha256sum "$out_file" >"$out_file.sha256"
+(cd "$out_dir" && sha256sum auto-xray >auto-xray.sha256)
 printf 'Built %s\n' "$out_file"
