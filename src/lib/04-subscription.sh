@@ -20,7 +20,7 @@ ax_fetch_subscription() {
 ax_validate_subscription() {
   local file=$1
   jq -e 'type == "array" and length > 0 and all(.[]; type == "object" and (.outbounds | type == "array" and length > 0))' "$file" >/dev/null \
-    || ax_die "subscription is not a non-empty Remnawave XRAY_JSON array"
+    || { ax_error "subscription is not a non-empty Remnawave XRAY_JSON array"; return 1; }
 }
 
 ax_subscription_interval() {

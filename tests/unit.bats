@@ -8,6 +8,7 @@ setup() {
   export AX_OPT_DIR="$BATS_TEST_TMPDIR/opt"
   export AX_BIN_LINK="$BATS_TEST_TMPDIR/bin/auto-xray"
   source "$PROJECT_ROOT/src/lib/00-common.sh"
+  source "$PROJECT_ROOT/src/lib/01-ui.sh"
   source "$PROJECT_ROOT/src/lib/03-state.sh"
   source "$PROJECT_ROOT/src/lib/04-subscription.sh"
   source "$PROJECT_ROOT/src/lib/07-update.sh"

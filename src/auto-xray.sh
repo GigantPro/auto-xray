@@ -180,11 +180,10 @@ ax_install_command() {
   if [[ $mode == configure && -r $AX_CONFIG_FILE ]]; then
     old_deployment=$(ax_read_kv DEPLOYMENT)
     [[ $old_deployment == "$AX_DEPLOYMENT" ]] || ax_die "changing deployment mode requires uninstall followed by install"
-    ax_runtime_stop
-    ax_remove_scheduler
   fi
   ax_resolve_xray_version "$AX_XRAY_VERSION_CHOICE"
   ax_prepare_xray
+  if [[ $mode == configure && -n $old_deployment ]]; then ax_runtime_stop; ax_remove_scheduler; fi
   local profile_index
   profile_index=$(ax_choose_profile_index "$AX_SETUP_BODY")
   AX_PROFILE_REMARK=$(ax_profile_remark "$AX_SETUP_BODY" "$profile_index")
@@ -233,14 +232,13 @@ ax_core_upgrade() {
   ax_load_for_command
   local was_running=false old_bin=$AX_XRAY_BIN old_version=$AX_XRAY_VERSION old_mode=$AX_XRAY_VERSION_MODE
   ax_runtime_is_running && was_running=true
-  ax_runtime_stop
   ax_resolve_xray_version "$AX_XRAY_VERSION_CHOICE"
   ax_prepare_xray
   if ! ax_xray_test_config "$AX_ACTIVE_CONFIG"; then
     AX_XRAY_BIN=$old_bin; AX_XRAY_VERSION=$old_version; AX_XRAY_VERSION_MODE=$old_mode
-    [[ $was_running == true ]] && ax_runtime_start
     ax_die "active config is incompatible with requested Xray version"
   fi
+  [[ $was_running == true ]] && ax_runtime_stop
   ax_save_settings
   [[ $was_running == true ]] && ax_runtime_start
   ax_ok "Xray core is now $AX_XRAY_VERSION"
@@ -249,7 +247,10 @@ ax_core_upgrade() {
 ax_uninstall_command() {
   ax_parse_options "$@"
   ax_load_for_command
-  if [[ $AX_ASSUME_YES != true && $AX_INTERACTIVE == true ]]; then ax_confirm 'Remove the auto-xray installation?' || exit 0; fi
+  if [[ $AX_ASSUME_YES != true ]]; then
+    [[ $AX_INTERACTIVE == true ]] || ax_die "non-interactive uninstall requires --yes"
+    ax_confirm 'Remove the auto-xray installation?' || exit 0
+  fi
   ax_runtime_stop
   ax_remove_scheduler
   rm -f -- "$AX_BIN_LINK"
@@ -263,7 +264,7 @@ main() {
   case $command in
     install) [[ -e $AX_CONFIG_FILE ]] && ax_die "already installed; use configure"; ax_install_command install "$@" ;;
     configure) ax_install_command configure "$@" ;;
-    update) ax_parse_options "$@"; ax_load_for_command; ax_rotate_logs; ax_update_subscription "$([[ ${AX_SCHEDULED:-false} == true ]] && printf false || printf true)" ;;
+    update) ax_parse_options "$@"; ax_load_for_command; ax_require_dependencies "$AX_SCHEDULER" "$AX_DEPLOYMENT" false false; ax_rotate_logs; ax_update_subscription "$([[ ${AX_SCHEDULED:-false} == true ]] && printf false || printf true)" ;;
     core-upgrade) ax_core_upgrade "$@" ;;
     status) ax_status_command ;;
     logs) ax_parse_options "$@"; ax_logs_command ;;

@@ -18,7 +18,7 @@ ax_try_candidate() {
 ax_apply_subscription() {
   local subscription=$1 headers=$2 initial_index=${3:-} keep_running=${4:-true}
   local preferred_index='' index candidate remark now next interval old_running=false had_old=false success=false
-  candidate=$(mktemp "$AX_STATE_DIR/.candidate.XXXXXX")
+  candidate=$(mktemp --suffix=.json "$AX_STATE_DIR/.candidate.XXXXXX")
   chmod 0600 "$candidate"
   [[ -s $AX_ACTIVE_CONFIG ]] && { ax_copy_atomic "$AX_ACTIVE_CONFIG" "$AX_LAST_GOOD_CONFIG" 0600; had_old=true; }
   ax_runtime_is_running && old_running=true

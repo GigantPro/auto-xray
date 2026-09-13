@@ -4,7 +4,9 @@ AX_CRON_FILE=${AX_CRON_FILE:-/etc/cron.d/auto-xray}
 ax_install_launcher() {
   local source=$0
   [[ -r $source ]] || ax_die "cannot read launcher source"
-  install -m 0755 "$source" "$AX_BIN_LINK"
+  if [[ $(readlink -f -- "$source") != $(readlink -f -- "$AX_BIN_LINK" 2>/dev/null || printf '%s' "$AX_BIN_LINK") ]]; then
+    install -m 0755 "$source" "$AX_BIN_LINK"
+  fi
 }
 
 ax_write_systemd_units() {
