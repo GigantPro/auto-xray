@@ -52,6 +52,11 @@ ax_write_atomic() {
   mv -f -- "$tmp" "$target"
 }
 
+ax_copy_atomic() {
+  local source=$1 target=$2 mode=${3:-0600}
+  ax_write_atomic "$target" "$mode" <"$source"
+}
+
 ax_read_kv() {
   local key=$1 file=${2:-$AX_CONFIG_FILE} line
   [[ -r $file ]] || return 1
