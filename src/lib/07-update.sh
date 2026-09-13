@@ -50,7 +50,7 @@ ax_apply_subscription() {
     ax_runtime_stop
     if [[ $had_old == true ]]; then
       ax_copy_atomic "$AX_LAST_GOOD_CONFIG" "$AX_ACTIVE_CONFIG" 0600
-      [[ $old_running == true ]] && ax_runtime_start "$AX_ACTIVE_CONFIG" || true
+      if [[ $old_running == true ]]; then ax_runtime_start "$AX_ACTIVE_CONFIG" || true; fi
     else
       rm -f -- "$AX_ACTIVE_CONFIG"
     fi

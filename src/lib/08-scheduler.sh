@@ -63,7 +63,7 @@ ax_remove_scheduler() {
   rm -f -- "$AX_SYSTEMD_DIR/$AX_SERVICE_NAME.service" \
     "$AX_SYSTEMD_DIR/$AX_SERVICE_NAME-update.service" \
     "$AX_SYSTEMD_DIR/$AX_SERVICE_NAME-update.timer" "$AX_CRON_FILE"
-  ax_command_exists systemctl && systemctl daemon-reload || true
+  if ax_command_exists systemctl; then systemctl daemon-reload || true; fi
 }
 
 ax_rotate_logs() {

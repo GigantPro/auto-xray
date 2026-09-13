@@ -17,8 +17,8 @@ ax_latest_xray_version() {
 }
 
 ax_installed_xray() {
-  local binary=${1:-}
-  [[ -n $binary ]] || binary=$(command -v xray 2>/dev/null || true)
+  local binary
+  binary=$(command -v xray 2>/dev/null || true)
   [[ -x $binary ]] || return 1
   local version
   version=$("$binary" version 2>/dev/null | awk 'NR==1 {for(i=1;i<=NF;i++) if ($i ~ /^[v]?[0-9]+\.[0-9]+\.[0-9]+$/) {sub(/^v/,"",$i); print $i; exit}}')

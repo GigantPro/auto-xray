@@ -260,7 +260,7 @@ ax_uninstall_command() {
 
 main() {
   local command=${1:-install}
-  [[ $# -gt 0 ]] && shift || true
+  if [[ $# -gt 0 ]]; then shift; fi
   case $command in
     install) [[ -e $AX_CONFIG_FILE ]] && ax_die "already installed; use configure"; ax_install_command install "$@" ;;
     configure) ax_install_command configure "$@" ;;
